@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CVE-2026-24770 // SYSTEM_OVERRIDE</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <style>
+        :root {
+            --cp-yellow: #fce205;
+            --cp-cyan: #00f0ff;
+            --cp-red: #ff003c;
+            --cp-bg: #090a0f;
+            --cp-dark: #121212;
+            --cp-light: #e0e0e0;
+        }
+
+        body {
+            background-color: var(--cp-bg);
+            color: var(--cp-cyan);
+            font-family: 'Courier New', Courier, monospace;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            padding-top: 50px;
+        }
+
+        .cyber-card {
+            background-color: var(--cp-dark);
+            border: 2px solid var(--cp-yellow);
+            border-radius: 0 !important;
+            box-shadow: 8px 8px 0px var(--cp-yellow);
+            padding: 30px;
+            max-width: 650px;
+            margin: auto;
+        }
+
+        h2 {
+            color: var(--cp-yellow);
+            border-bottom: 2px solid var(--cp-cyan);
+            padding-bottom: 15px;
+            font-weight: 800;
+            text-shadow: 0 0 10px rgba(252, 226, 5, 0.5);
+            margin-bottom: 30px;
+        }
+
+        .form-check-input {
+            background-color: var(--cp-bg);
+            border: 1px solid var(--cp-cyan);
+            border-radius: 0 !important;
+        }
+
+        .form-check-input:checked {
+            background-color: var(--cp-cyan);
+            border-color: var(--cp-cyan);
+            box-shadow: 0 0 10px var(--cp-cyan);
+        }
+
+        input[type="file"] {
+            background-color: var(--cp-dark);
+            color: var(--cp-yellow);
+            border: 1px dashed var(--cp-cyan);
+            border-radius: 0;
+            padding: 10px;
+            width: 100%;
+        }
+
+        .cyber-btn {
+            background-color: var(--cp-cyan);
+            color: var(--cp-bg);
+            border: none;
+            border-radius: 0;
+            font-weight: bold;
+            padding: 15px;
+            width: 100%;
+            margin-top: 25px;
+            box-shadow: 0 0 10px rgba(0, 240, 255, 0.5);
+        }
+
+        .cyber-btn:hover {
+            background-color: var(--cp-yellow);
+            box-shadow: 0 0 20px rgba(252, 226, 5, 0.8);
+        }
+
+        #result {
+            margin-top: 25px;
+            padding: 20px;
+            display: none;
+            border-radius: 0;
+            word-wrap: break-word;
+            font-size: 0.9rem;
+        }
+
+        .success-neon { 
+            color: #00ff00; 
+            border: 2px solid #00ff00; 
+            box-shadow: inset 0 0 10px rgba(0,255,0,0.2), 0 0 15px rgba(0,255,0,0.4); 
+        }
+
+        .error-neon { 
+            color: var(--cp-red); 
+            border: 2px solid var(--cp-red); 
+            box-shadow: inset 0 0 10px rgba(255,0,60,0.2), 0 0 15px rgba(255,0,60,0.4); 
+        }
+
+        .text-highlight { color: var(--cp-light); }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="cyber-card">
+            <h2>ZIP SLIP EXPLOIT (MINERU)</h2>
+            <form id="uploadForm">
+                <div class="mb-4">
+                    <p class="text-highlight">SELECT PARSER MODULE:</p>
+                    <div class="form-check mb-2">
+                        <input class="form-check-input" type="radio" name="mode" id="vulnMode" value="vuln" checked>
+                        <label class="form-check-label" for="vulnMode">VULNERABLE (UNPATCHED)</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="mode" id="secureMode" value="secure">
+                        <label class="form-check-label" for="secureMode">SECURE (PATCHED)</label>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <p class="text-highlight">INJECT PAYLOAD (.ZIP):</p>
+                    <input type="file" id="file" required accept=".zip">
+                </div>
+                
+                <button type="submit" class="cyber-btn">EXECUTE DECOMPRESSION</button>
+            </form>
+            <div id="result"></div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('uploadForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const fileElement = document.getElementById('file');
+            const modeElement = document.querySelector('input[name="mode"]:checked');
+            
+            if (!fileElement.files[0]) return;
+
+            const formData = new FormData();
+            formData.append('file', fileElement.files[0]);
+            formData.append('mode', modeElement.value);
+
+            const resDiv = document.getElementById('result');
+            resDiv.style.display = 'block';
+            resDiv.className = '';
+            resDiv.innerHTML = 'PROCESSING INJECTION...';
+            resDiv.style.color = 'var(--cp-yellow)';
+            resDiv.style.border = '1px solid var(--cp-yellow)';
+
+            try {
+                const response = await fetch('/upload', { method: 'POST', body: formData });
+                const data = await response.json();
+
+                if (data.status === 'success') {
+                    resDiv.className = 'success-neon';
+                    resDiv.style.color = ''; 
+                    resDiv.style.border = '';
+                    resDiv.innerHTML = 'EXTRACTION SUCCESSFUL!<br><br><span class="text-highlight">FILES OVERWRITTEN AT:</span><br>' + data.files.join('<br>');
+                } else {
+                    resDiv.className = 'error-neon';
+                    resDiv.style.color = '';
+                    resDiv.style.border = '';
+                    resDiv.innerHTML = 'SYSTEM BLOCKED:<br><br><span class="text-highlight">' + data.message + '</span>';
+                }
+            } catch (err) {
+                resDiv.className = 'error-neon';
+                resDiv.innerHTML = 'FATAL ERROR: CONNECTION LOST.';
+            }
+        };
+    </script>
+</body>
+</html>
